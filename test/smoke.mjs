@@ -3,8 +3,8 @@
  *
  * Exercises the REAL shipped files through minimal stubs:
  *  - Host half: `apply` registers one system-prompt section and one preference
- *    route; the route's GET/POST round-trip is driven end to end against the
- *    real `config.json` beside the package.
+ *    route; the route's GET/POST round-trip is driven end to end against a
+ *    scratch preference file, never the user's real one.
  *  - Client half: boots the lazy-CJS factory with fake loader/React/ctx/fetch,
  *    captures both registered cells, and drives the chip row in BOTH click
  *    behaviours plus the settings page.
@@ -12,7 +12,7 @@
  * Not shipped: `package.json` `files` omits `test/`.
  */
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
