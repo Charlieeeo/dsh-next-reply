@@ -18,7 +18,13 @@ import { dirname, join } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const pkgRoot = join(here, '..')
-const CONFIG_FILE = join(pkgRoot, 'config.json')
+
+// Scratch files, so the suite never reads or writes the user's real preference
+// under the DSH home. The plugin exposes both paths for exactly this reason.
+const CONFIG_FILE = join(pkgRoot, '.smoke-config.json')
+const LEGACY_FILE = join(pkgRoot, '.smoke-legacy.json')
+process.env.DSH_NRC_CONFIG_FILE = CONFIG_FILE
+process.env.DSH_NRC_LEGACY_CONFIG_FILE = LEGACY_FILE
 
 let passed = 0
 async function check(label, fn) {
@@ -27,10 +33,9 @@ async function check(label, fn) {
   console.log(`  ok  ${label}`)
 }
 
-// Never destroy a real preference: snapshot whatever is on disk, run against a
-// clean slate, and put the original back at the end.
-const originalConfig = existsSync(CONFIG_FILE) ? readFileSync(CONFIG_FILE, 'utf8') : null
+// The suite owns these two scratch files outright.
 rmSync(CONFIG_FILE, { force: true })
+rmSync(LEGACY_FILE, { force: true })
 
 // ---------------------------------------------------------------- Host half
 
@@ -151,6 +156,14 @@ await check('POST rejects a non-boolean payload without touching the file', asyn
 await check('an unsupported method is refused', async () => {
   const { status } = await callRoute({ method: 'DELETE' })
   assert.equal(status, 405)
+})
+
+await check('migrates a value an older build wrote beside the package', async () => {
+  rmSync(CONFIG_FILE, { force: true })
+  writeFileSync(LEGACY_FILE, JSON.stringify({ directSend: false }), 'utf8')
+  const { json } = await callRoute({ method: 'GET' })
+  assert.deepEqual(json, { directSend: false })
+  rmSync(LEGACY_FILE, { force: true })
 })
 
 // -------------------------------------------------------------- Client half
@@ -476,13 +489,9 @@ await check('chips carry an accessible label', () => {
   assert.equal(chipsOf(tree)[0].props['aria-label'], '第 1 个下一步建议：甲')
 })
 
-// Put the real preference back exactly as it was, so running the suite can
-// never silently reset what the user chose in Settings.
+// Nothing real was touched: the suite only ever owned the scratch paths.
 serverSide = { directSend: true }
-if (originalConfig === null) {
-  rmSync(CONFIG_FILE, { force: true })
-} else {
-  writeFileSync(CONFIG_FILE, originalConfig, 'utf8')
-}
+rmSync(CONFIG_FILE, { force: true })
+rmSync(LEGACY_FILE, { force: true })
 
 console.log(`\n${passed} checks passed.`)
