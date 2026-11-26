@@ -1,6 +1,6 @@
 {
   "name": "dsh-next-reply",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "在每条回答下方显示最多 3 个可点击的下一步建议：建议由主回复自身给出、不额外调用模型，点击可立即发送或只填进输入框。",
   "type": "module",
   "main": "lib/index.js",
@@ -62,5 +62,9 @@
       ]
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/smoke.mjs && node test/probe-config.mjs",
+    "test:real": "node test/replay-real-session.mjs"
+  }
 }
