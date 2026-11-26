@@ -23,7 +23,8 @@
     "README.md",
     "README.en.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "screenshots.json"
   ],
   "icon": "./icon-180.png",
   "keywords": [
@@ -66,6 +67,7 @@
   "license": "MIT",
   "scripts": {
     "test": "node test/smoke.mjs && node test/probe-config.mjs",
-    "test:real": "node test/replay-real-session.mjs"
+    "test:real": "node test/replay-real-session.mjs",
+    "preview": "node scripts/render-preview.mjs"
   }
 }
