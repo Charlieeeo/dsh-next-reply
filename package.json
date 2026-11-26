@@ -1,7 +1,7 @@
 {
-  "name": "dsh-next-reply-chips",
-  "version": "0.6.1",
-  "description": "在每条回答下方显示最多 3 个可点击的下一步建议：建议由主回复自身给出、不额外调用模型，点击可立即发送或只填入输入框。",
+  "name": "dsh-next-reply",
+  "version": "0.7.0",
+  "description": "在每条回答下方显示最多 3 个可点击的下一步建议：建议由主回复自身给出、不额外调用模型，点击可立即发送或只填进输入框。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -41,11 +41,11 @@
   "author": "Charlieeeo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Charlieeeo/dsh-next-reply-chips.git"
+    "url": "git+https://github.com/Charlieeeo/dsh-next-reply.git"
   },
-  "homepage": "https://github.com/Charlieeeo/dsh-next-reply-chips#readme",
+  "homepage": "https://github.com/Charlieeeo/dsh-next-reply#readme",
   "bugs": {
-    "url": "https://github.com/Charlieeeo/dsh-next-reply-chips/issues"
+    "url": "https://github.com/Charlieeeo/dsh-next-reply/issues"
   },
   "publishConfig": {
     "access": "public",
