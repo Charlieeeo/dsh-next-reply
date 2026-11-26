@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>dsh-next-reply preview</title>
+<style>
+  /* Values below are copied from lib/client.js, so the drawing cannot drift
+     away from what the plugin actually renders. */
+  :root {
+    --label-primary: #111827;
+    --label-secondary: #6b7280;
+    --border-l1: #e5e7eb;
+    --bg-layer-1: #f3f4f6;
+    --brand: #4d6bfe;
+    --page: #ffffff;
+    --card: #ffffff;
+    --skeleton: #d8dde5;
+    --skeleton-soft: #e6eaf0;
+  }
+  html.dark {
+    --label-primary: #f3f4f6;
+    --label-secondary: #9ca3af;
+    --border-l1: #374151;
+    --bg-layer-1: #1f2937;
+    --brand: #6b8afe;
+    --page: #0f1115;
+    --card: #171a21;
+    --skeleton: #2b3442;
+    --skeleton-soft: #222a35;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1200px; height: 560px; overflow: hidden;
+    background: var(--page);
+    font: 13px/20px "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    color: var(--label-primary);
+    display: flex; align-items: center; justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    width: 1090px;
+    border: 1px solid var(--border-l1);
+    border-radius: 14px;
+    background: var(--card);
+    padding: 26px 30px 22px;
+  }
+  /* Skeleton lines stand for the answer text above the suggestions. */
+  .answer { display: flex; flex-direction: column; gap: 13px; margin-bottom: 22px; }
+  .line { height: 9px; border-radius: 5px; background: var(--skeleton); }
+  .line.soft { background: var(--skeleton-soft); }
+  /* The suggestion list: vertical, one wrapping row per suggestion. */
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .row { display: flex; align-items: stretch; gap: 6px; }
+  .label {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; align-items: center;
+    padding: 6px 10px;
+    font-size: 13px; line-height: 20px; text-align: left;
+    border: 1px solid var(--border-l1); border-radius: 10px;
+    color: var(--label-primary);
+  }
+  .label.dim { opacity: .55; color: var(--label-secondary); }
+  .icon {
+    flex: 0 0 auto; width: 32px; min-height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-l1); border-radius: 10px;
+    color: var(--label-primary);
+  }
+  .icon.dim { opacity: .4; color: var(--label-secondary); }
+  svg { display: block; }
+  /* Composer strip, so the row is shown in its real context. */
+  .composer {
+    margin-top: 20px; padding: 9px 12px;
+    border: 1px solid var(--border-l1); border-radius: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--label-secondary); font-size: 12px;
+  }
+  .caret { display: inline-block; width: 1px; height: 15px; background: var(--brand); vertical-align: -3px; }
+  .tools { display: flex; gap: 9px; }
+  .dot { width: 15px; height: 15px; border-radius: 4px; background: var(--skeleton); }
+  .meta { font-variant-numeric: tabular-nums; }
+  .hint {
+    margin-top: 12px; display: flex; gap: 18px;
+    font-size: 11.5px; color: var(--label-secondary);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="answer">
+    <div class="line" style="width: 74%"></div>
+    <div class="line" style="width: 93%"></div>
+    <div class="line soft" style="width: 86%"></div>
+    <div class="line soft" style="width: 58%"></div>
+  </div>
+
+  <div class="list">
+    <div class="row">
+      <div class="label">按这个结论定稿，把三条噪声预算的推导补进正文</div>
+      <div class="icon" title="直接发送">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </div>
+      <div class="icon" title="填入输入框">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 3.9 11a8.4 8.4 0 0 1 8.4-8.4h.6A8.4 8.4 0 0 1 21 11v.5z"/></svg>
+      </div>
+    </div>
+    <div class="row">
+      <div class="label">先别定稿，把 Raman 那条下限从 100 dB 收紧到 95 dB 再看结论</div>
+      <div class="icon" title="直接发送">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </div>
+      <div class="icon" title="填入输入框">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 3.9 11a8.4 8.4 0 0 1 8.4-8.4h.6A8.4 8.4 0 0 1 21 11v.5z"/></svg>
+      </div>
+    </div>
+    <div class="row">
+      <div class="label">换成英文把这段重写，其余数据和结论一个字都不要动</div>
+      <div class="icon" title="直接发送">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </div>
+      <div class="icon" title="填入输入框">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 3.9 11a8.4 8.4 0 0 1 8.4-8.4h.6A8.4 8.4 0 0 1 21 11v.5z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="composer">
+    <span>问点什么…<span class="caret"></span></span>
+    <span class="meta">2.8M tok · 16:47</span>
+  </div>
+
+  <div class="hint">
+    <span>点文字＝填入输入框光标处</span>
+    <span>纸飞机＝直接发送</span>
+    <span>气泡＝填入输入框</span>
+  </div>
+
+</div>
+</body>
+</html>
