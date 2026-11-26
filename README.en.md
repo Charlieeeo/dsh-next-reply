@@ -172,7 +172,7 @@ Clicks now take a `captureInsertion()` span carrying `draftRev` and call `insert
 
 Sending calls `submit()`. With text already in the composer, any "clear then send" implementation is an **irreversible delete**. So a non-empty draft (or any attachment) greys out every send control, with a `title` saying "clear it first, or switch to fill". Filling stays enabled — that path inserts, it does not overwrite.
 
-This is deliberately the opposite of at least one sibling plugin, which clears the draft so a click always works. We chose not losing data.
+The trade-off is explicit: **any "clear it first, then send" implementation is an irreversible delete**, so a non-empty composer greys the send controls out instead of clearing them for you. Better that a click does nothing than that you lose the sentence you were writing.
 
 ### Why assistant text is read from `data.blocks`, and only `kind: 'text'`
 
@@ -230,16 +230,73 @@ So the preference is a plain JSON file and the settings surface is a `settings.s
 
 The first stand-in's `useState` setter was a no-op, so the "freeze after send" test **could never reach that branch** — it asserted a path that never rendered. That is a green light for nothing. The stand-in now stores values in hook slots, resets between scenarios, and the frozen branch is genuinely rendered and asserted (no button survives it).
 
-## 🔀 What we took from sibling plugins, and what we refused
+## ⭐ What sets this apart
 
-| Project | Its core move | What we took | Why we did not follow |
-| --- | --- | --- | --- |
-| [dsh-prompt-predict](https://github.com/ferrisching/dsh-prompt-predict) | Ghost text inside the composer; Tab accepts, Esc ignores, ↻ rerolls | The "this turn is handled" notion; the `captureInsertion` revision-CAS idea | It **spends an extra model call per turn**; ghost text and a suggestion list are two drawings of one thing |
-| [dsh-next-input](https://github.com/songshuhuoban/dsh-next-input) | One suggestion as composer placeholder text; Tab fills it | **`captureInsertion()` + `insertText()`**; request/turn race discarding; a diagnostic you can read | It also calls a model every turn, and pays for that with rolling summaries and an on-disk cache |
-| [dsh-suggest-actions](https://github.com/hiJoeLee/dsh-suggest-actions) | A Host `suggest_actions` tool the model calls as it closes | **The 900 ms double-click guard**; turn-tail rendering; one explicit action per suggestion | Not moving to the tool channel: it enters the tool list, spends a tool round, and is visible to subagents. It also **clears the draft on click**; we do the opposite |
-| [dsh-wdx-relief](https://github.com/wdxtub/dsh-wdx-relief) | Eight low-friction features in one bundle, all through plugin `Config` | Its "result and next step first" phrasing; its habit of falling back locally on model failure | Its progress bar and session recap need background calls to a cheap model; it can use `Config` because it ships dependencies |
+Every claim below points at a place in the code. None of it is marketing.
 
-The single disagreement worth naming: **siblings generally buy format-independence with one extra model call per turn; we keep zero calls for zero latency and zero cost**, and the price is that a turn where the model ignores the format shows nothing — so that case is a **visible diagnostic** instead of a call spent to erase it.
+### Zero extra model calls
+
+The suggestions come from the **reply itself**, written as it closes. The plugin issues no model request at all — neither the client nor the host half contains an LLM call.
+
+That means **no added latency and no added cost per turn**. A hundred turns a day is a hundred auxiliary calls not made, and no serial request to wait on.
+
+The cost is stated plainly: a turn where the model ignores the format shows nothing. That is handled with a **visible diagnostic** (below) rather than with a call spent to erase it.
+
+### It never overwrites what you typed
+
+A click goes through `captureInsertion()` + `insertText(text, span)`: one **undoable** plain-text insert, guarded by a `draftRev` revision check that returns `false` when the draft moved under it.
+
+On `false` it **does not fall back to `setDraft`** — better that nothing happens than that a draft is traded for a suggestion. `setDraft` survives only for an empty composer on a build without `insertText`.
+
+Sending works the same way: while the composer holds text (or an attachment), every send control **greys out** with a `title` saying why. Any "clear it first, then send" implementation is an irreversible delete, and this plugin does not do that.
+
+### One mode, both actions
+
+Each suggestion carries two trailing buttons: **paper plane sends**, **bubble inserts at the caret**. Clicking the text itself is the non-destructive insert.
+
+No trip to settings to change intent — batch-filling and committing both work on the same row. The default is insert because any "a click sends" default costs a first-time user the sentence they were halfway through writing.
+
+### A vertical row lets a suggestion be a full sentence
+
+Three suggestions stack vertically, each owning a full wrapping row, with a 160-character data cap and a prompt asking for 8–40 characters per item.
+
+Three pills on one line leave each about 260 px, so anything longer is eaten by an ellipsis — and the eaten part is exactly what decides whether you would send it. Vertically, the model can write "hold off, tighten the Raman floor from 100 dB to 95 dB and re-check the conclusion" instead of a fragment you have to complete yourself.
+
+### "Why did nothing appear" has a real answer
+
+The bottom of the settings page lists **recent turns with no suggestions**, read from at most eight entries held in host memory, each with a time and a reason:
+
+| Reason | Meaning |
+| --- | --- |
+| The reply had no `suggest` marker | The model did not close with the format (most common) |
+| A marker with no usable option | Everything inside was cleaned away |
+| No assistant answer node | Still running, or interrupted |
+| No chat snapshot | The kernel snapshot shape differs from what this build expects |
+
+Only the **newest turn** reports: a page reload replays every historical row, and an eight-slot ring filled with old turns would answer nothing. The reports stay **in memory, never on disk** — the plugin's promise is one file.
+
+### It reads the kernel's real payload shape
+
+An assistant step publishes `data.blocks[]` (`{kind: 'text'|'reasoning'|'tool-call', text}`), not the `data.content[]` a user message carries.
+
+The reader takes **only `kind: 'text'`**, matching the kernel's own `hasAssistantReplyContent`. That detail matters: including `reasoning` lets a fence mentioned in thought invent buttons, and reasoning spliced between two prose blocks cuts a real fence in half.
+
+This was found by **replaying a real session log**; 77 green unit tests had missed it. That is why the repo ships `npm run test:real`, which decompresses a real `session.v4.jsonl.zstd` and runs the reader over it.
+
+### Zero dependencies, installable from any path
+
+Both `dependencies` and `peerDependencies` are empty.
+
+That is not fussiness. A plugin `Config` form needs `@deepseek-ai/schemastery`, and a `link:`-installed package resolves bare imports from **its own** directory, so the form simply would not load; and declaring official `@deepseek-ai/*` peers brings a version trap where prerelease builds are silently excluded and an unmet peer **blocks installation**.
+
+So the preference is a plain JSON file and the settings surface is a `settings.section` page. Slightly more code; `dsh plugin add <any path>` works.
+
+### A few engineering disciplines
+
+- **77 component checks plus two probes**: the component suite, a preference-route probe (scratch files, never the real preference), and a real-log replay.
+- **The test stand-in actually remembers state**: the first one's `useState` setter was a no-op, so the "freeze after send" test could never reach its branch — a green light for nothing. It now stores values in hook slots and resets between scenarios.
+- **The previews are rendered from source**: `scripts/render-preview.mjs` reads the font size, both gaps, corner radius and icon box out of `lib/client.js` and refuses to render when any of them disagrees. Hand-drawn pictures drift — the previous preview still showed a pill row that no longer exists.
+- **Every entry claim is checked against code**: `scripts/awesome-entry.mjs` validates the description line by line ("up to three" against `MAX_CHIPS`, "zero calls" against both halves, "inserts at the caret" against `captureInsertion`).
 
 ## 🔒 Data and privacy
 
